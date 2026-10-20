@@ -2,9 +2,13 @@ import { Router } from 'express';
 import {
   cancelBooking,
   createBooking,
+  createCheckout,
+  createPaidBooking,
   getBooking,
   getBookingTicket,
   listBookings,
+  paymentWebhook,
+  reconcilePayment,
 } from '../controllers/booking.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -17,6 +21,10 @@ router.get('/bookings', requireAuth, listBookings);
 router.get('/bookings/:bookingId', requireAuth, getBooking);
 router.get('/bookings/:bookingId/ticket', requireAuth, getBookingTicket);
 router.post('/bookings/:bookingId/cancel', requireAuth, cancelBooking);
+router.post('/bookings/:bookingId/checkout', requireAuth, createCheckout);
+router.post('/bookings/:bookingId/reconcile', requireAuth, reconcilePayment);
 router.post('/events/:eventId/bookings', requireAuth, createBooking);
+router.post('/events/:eventId/bookings/paid', requireAuth, createPaidBooking);
+router.post('/payments/webhook', paymentWebhook);
 
 export default router;

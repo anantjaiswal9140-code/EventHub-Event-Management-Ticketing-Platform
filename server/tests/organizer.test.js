@@ -57,21 +57,52 @@ test(
     const createdUserIds = [];
 
     t.after(async () => {
-      await prisma.booking.deleteMany({
-        where: { id: { in: createdBookingIds } },
-      });
-      await prisma.event.deleteMany({
-        where: { id: { in: createdEventIds } },
-      });
-      await prisma.user.deleteMany({
-        where: { id: { in: createdUserIds } },
-      });
-      if (server.listening) {
-        await new Promise((resolve, reject) =>
-          server.close((error) => (error ? reject(error) : resolve()))
+      const cleanupErrors = [];
+      const cleanup = async (operation) => {
+        try {
+          await operation();
+        } catch (error) {
+          cleanupErrors.push(error);
+        }
+      };
+
+      if (createdBookingIds.length > 0) {
+        await cleanup(() =>
+          prisma.booking.deleteMany({
+            where: { id: { in: createdBookingIds } },
+          })
         );
       }
-      await prisma.$disconnect();
+      if (createdEventIds.length > 0) {
+        await cleanup(() =>
+          prisma.event.deleteMany({
+            where: { id: { in: createdEventIds } },
+          })
+        );
+      }
+      if (createdUserIds.length > 0) {
+        await cleanup(() =>
+          prisma.user.deleteMany({
+            where: { id: { in: createdUserIds } },
+          })
+        );
+      }
+      if (server.listening) {
+        await cleanup(
+          () =>
+            new Promise((resolve, reject) =>
+              server.close((error) => (error ? reject(error) : resolve()))
+            )
+        );
+      }
+      await cleanup(() => prisma.$disconnect());
+
+      if (cleanupErrors.length > 0) {
+        throw new AggregateError(
+          cleanupErrors,
+          'Organizer test cleanup failed.'
+        );
+      }
     });
 
     await prisma.$connect();
@@ -104,6 +135,8 @@ test(
     createdUserIds.push(organizer.id, otherOrganizer.id, attendee.id);
 
     async function createEvent(ownerId = organizer.id, overrides = {}) {
+      const startAt =
+        overrides.startAt ?? new Date(Date.now() - 10 * 60 * 1000);
       const event = await prisma.event.create({
         data: {
           organizerId: ownerId,
@@ -114,9 +147,9 @@ test(
           address: '1 Test Street',
           city: 'Test City',
           timezone: 'UTC',
-          startAt: new Date(Date.now() - 10 * 60 * 1000),
+          startAt,
           endAt: new Date(Date.now() + 60 * 60 * 1000),
-          registrationClosesAt: new Date(Date.now() - 15 * 60 * 1000),
+          registrationClosesAt: new Date(startAt.getTime() - 15 * 60 * 1000),
           capacity: 5,
           priceMinor: 0,
           currency: 'USD',
