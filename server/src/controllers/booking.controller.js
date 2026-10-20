@@ -1,10 +1,16 @@
 import {
   cancelUserBooking,
   createFreeBooking,
+  createPaidBooking as createPaidBookingReservation,
   getUserBooking,
   getUserBookingTicket,
   listUserBookings,
 } from '../services/booking.service.js';
+import {
+  createBookingCheckout,
+  processPaymentWebhook,
+  reconcileBookingPayment,
+} from '../services/payment.service.js';
 import { HttpError } from '../lib/errors.js';
 
 const uuidPattern =
@@ -26,6 +32,51 @@ export async function createBooking(req, res) {
     ticket: booking,
     data: booking,
   });
+}
+
+export async function createPaidBooking(req, res) {
+  const { eventId } = req.params;
+  if (!uuidPattern.test(eventId)) {
+    throw new HttpError(
+      404,
+      'EVENT_UNAVAILABLE',
+      'Event not found or unavailable.'
+    );
+  }
+
+  const { booking, payment, created } = await createPaidBookingReservation(
+    eventId,
+    req.user.id
+  );
+
+  return res.status(created ? 201 : 200).json({
+    data: { booking, payment },
+  });
+}
+
+export async function createCheckout(req, res) {
+  const { bookingId } = req.params;
+  validateBookingId(bookingId);
+
+  const checkout = await createBookingCheckout(bookingId, req.user.id);
+  return res.status(200).json({ data: checkout });
+}
+
+export async function reconcilePayment(req, res) {
+  const { bookingId } = req.params;
+  validateBookingId(bookingId);
+
+  const result = await reconcileBookingPayment(bookingId, req.user.id);
+  return res.status(200).json({ data: result });
+}
+
+export async function paymentWebhook(req, res) {
+  const result = await processPaymentWebhook(
+    req.body,
+    req.get('x-payment-signature')
+  );
+
+  return res.status(200).json({ data: result });
 }
 
 function validateBookingId(bookingId) {

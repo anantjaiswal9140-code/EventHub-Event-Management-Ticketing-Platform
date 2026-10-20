@@ -32,7 +32,7 @@ const bookingSelect = {
   },
 };
 
-function createTicketCode() {
+export function createTicketCode() {
   return crypto.randomBytes(16).toString('base64url');
 }
 
@@ -45,6 +45,63 @@ function findActiveBooking(client, eventId, userId) {
     },
     select: bookingSelect,
   });
+}
+
+const paymentSelect = {
+  id: true,
+  bookingId: true,
+  provider: true,
+  status: true,
+  amountMinor: true,
+  currency: true,
+  createdAt: true,
+};
+
+const paidBookingSelect = {
+  ...bookingSelect,
+  ticketCode: true,
+};
+
+function findActivePaidBooking(client, eventId, userId, now) {
+  return client.booking.findFirst({
+    where: {
+      eventId,
+      userId,
+      OR: [
+        { status: 'CONFIRMED' },
+        {
+          status: 'PENDING_PAYMENT',
+          holdExpiresAt: { gt: now },
+        },
+      ],
+    },
+    select: {
+      ...paidBookingSelect,
+      payment: { select: paymentSelect },
+    },
+  });
+}
+
+function getPaymentHoldDurationMs() {
+  const holdMinutes = Number(process.env.PAYMENT_HOLD_MINUTES ?? 15);
+
+  if (!Number.isSafeInteger(holdMinutes) || holdMinutes < 1) {
+    throw new Error('PAYMENT_HOLD_MINUTES must be a positive integer.');
+  }
+
+  return holdMinutes * 60 * 1000;
+}
+
+function isActiveBookingConflict(error) {
+  const target = error.meta?.target;
+
+  return (
+    error.code === 'P2002' &&
+    ((Array.isArray(target) &&
+      target.includes('userId') &&
+      target.includes('eventId')) ||
+      target === 'Booking_one_active_per_user_event')
+  );
 }
 
 export async function createFreeBooking(eventId, userId) {
@@ -163,6 +220,175 @@ export async function createFreeBooking(eventId, userId) {
     }
 
     return { booking, created: false };
+  }
+}
+
+export async function createPaidBooking(eventId, userId) {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const lockedEvents = await tx.$queryRaw`
+        SELECT "id"
+        FROM "Event"
+        WHERE "id" = ${eventId}::uuid
+        FOR UPDATE
+      `;
+
+      if (lockedEvents.length === 0) {
+        throw new HttpError(
+          404,
+          'EVENT_UNAVAILABLE',
+          'Event not found or unavailable.'
+        );
+      }
+
+      const event = await tx.event.findUnique({
+        where: { id: eventId },
+      });
+
+      if (!event || event.status === 'DRAFT' || event.hiddenAt) {
+        throw new HttpError(
+          404,
+          'EVENT_UNAVAILABLE',
+          'Event not found or unavailable.'
+        );
+      }
+
+      if (event.status === 'CANCELLED') {
+        throw new HttpError(
+          409,
+          'EVENT_UNAVAILABLE',
+          'This event has been cancelled.'
+        );
+      }
+
+      if (event.priceMinor <= 0) {
+        throw new HttpError(
+          409,
+          'PAYMENT_NOT_REQUIRED',
+          'Paid booking is available only for paid events.'
+        );
+      }
+
+      const now = new Date();
+      const staleBookings = await tx.booking.findMany({
+        where: {
+          eventId,
+          status: 'PENDING_PAYMENT',
+          holdExpiresAt: { lte: now },
+        },
+        select: { id: true },
+      });
+      const staleBookingIds = staleBookings.map((booking) => booking.id);
+
+      if (staleBookingIds.length > 0) {
+        await tx.payment.updateMany({
+          where: {
+            bookingId: { in: staleBookingIds },
+            status: 'OPEN',
+          },
+          data: { status: 'EXPIRED' },
+        });
+        await tx.booking.updateMany({
+          where: {
+            id: { in: staleBookingIds },
+            status: 'PENDING_PAYMENT',
+          },
+          data: { status: 'EXPIRED' },
+        });
+      }
+
+      const currentBooking = await findActivePaidBooking(
+        tx,
+        eventId,
+        userId,
+        now
+      );
+
+      if (currentBooking) {
+        const { payment, ...booking } = currentBooking;
+        return { booking, payment, created: false };
+      }
+
+      if (event.registrationClosesAt <= now || event.startAt <= now) {
+        throw new HttpError(
+          409,
+          'REGISTRATION_CLOSED',
+          'Registration for this event is closed.'
+        );
+      }
+
+      const activeBookingCount = await tx.booking.count({
+        where: {
+          eventId,
+          OR: [
+            { status: 'CONFIRMED' },
+            {
+              status: 'PENDING_PAYMENT',
+              holdExpiresAt: { gt: now },
+            },
+          ],
+        },
+      });
+
+      if (activeBookingCount >= event.capacity) {
+        throw new HttpError(409, 'EVENT_SOLD_OUT', 'This event is sold out.');
+      }
+
+      const booking = await tx.booking.create({
+        data: {
+          userId,
+          eventId,
+          status: 'PENDING_PAYMENT',
+          amountMinor: event.priceMinor,
+          currency: event.currency,
+          holdExpiresAt: new Date(now.getTime() + getPaymentHoldDurationMs()),
+          eventSnapshot: {
+            title: event.title,
+            startAt: event.startAt.toISOString(),
+            endAt: event.endAt.toISOString(),
+            venue: event.venue,
+            address: event.address,
+            city: event.city,
+            timezone: event.timezone,
+            priceMinor: event.priceMinor,
+            currency: event.currency,
+          },
+        },
+        select: paidBookingSelect,
+      });
+
+      const payment = await tx.payment.create({
+        data: {
+          bookingId: booking.id,
+          provider: 'razorpay',
+          status: 'OPEN',
+          amountMinor: booking.amountMinor,
+          currency: booking.currency,
+        },
+        select: paymentSelect,
+      });
+
+      return { booking, payment, created: true };
+    });
+  } catch (error) {
+    if (!isActiveBookingConflict(error)) {
+      throw error;
+    }
+
+    const now = new Date();
+    const currentBooking = await findActivePaidBooking(
+      prisma,
+      eventId,
+      userId,
+      now
+    );
+
+    if (!currentBooking) {
+      throw error;
+    }
+
+    const { payment, ...booking } = currentBooking;
+    return { booking, payment, created: false };
   }
 }
 
