@@ -8,6 +8,8 @@ import CheckoutReturn from './pages/CheckoutReturn.jsx';
 import MyBookings from './pages/MyBookings.jsx';
 import Profile from './pages/Profile.jsx';
 import RequireAuth from './auth/RequireAuth.jsx';
+import Events from './pages/Events.jsx';
+import EventDetails from './pages/EventDetails.jsx';
 
 function Placeholder({ name }) {
   return <h1 className="p-8 text-2xl font-bold">{name} (coming soon)</h1>;
@@ -62,11 +64,9 @@ function App() {
         }
       />
 
-      <Route path="/events" element={<Placeholder name="Events" />} />
-      <Route
-        path="/events/:eventId"
-        element={<Placeholder name="Event details" />}
-      />
+      <Route path="/events" element={<Events />} />
+      <Route path="/events/:eventId" element={<EventDetails />} />
+
       <Route
         path="/organizer"
         element={<Placeholder name="Organizer dashboard" />}
@@ -88,7 +88,7 @@ function App() {
         element={<Placeholder name="Attendees and check-in" />}
       />
 
-            <Route
+      <Route
         path="/my-bookings"
         element={
           <RequireAuth>
