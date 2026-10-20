@@ -6,6 +6,8 @@ import BookingDetails from './pages/BookingDetails.jsx';
 import BookingTicket from './pages/BookingTicket.jsx';
 import CheckoutReturn from './pages/CheckoutReturn.jsx';
 import MyBookings from './pages/MyBookings.jsx';
+import Profile from './pages/Profile.jsx';
+import RequireAuth from './auth/RequireAuth.jsx';
 
 function Placeholder({ name }) {
   return <h1 className="p-8 text-2xl font-bold">{name} (coming soon)</h1>;
@@ -17,16 +19,47 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/profile" element={<Placeholder name="Profile" />} />
-      <Route path="/admin" element={<Placeholder name="Admin" />} />
-      <Route path="/admin/users" element={<Placeholder name="Admin users" />} />
+
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <Profile />
+          </RequireAuth>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <RequireAuth role="ADMIN">
+            <Placeholder name="Admin" />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <RequireAuth role="ADMIN">
+            <Placeholder name="Admin users" />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/admin/events"
-        element={<Placeholder name="Admin events" />}
+        element={
+          <RequireAuth role="ADMIN">
+            <Placeholder name="Admin events" />
+          </RequireAuth>
+        }
       />
       <Route
         path="/admin/payment-issues"
-        element={<Placeholder name="Payment issues" />}
+        element={
+          <RequireAuth role="ADMIN">
+            <Placeholder name="Payment issues" />
+          </RequireAuth>
+        }
       />
 
       <Route path="/events" element={<Placeholder name="Events" />} />
@@ -55,10 +88,38 @@ function App() {
         element={<Placeholder name="Attendees and check-in" />}
       />
 
-      <Route path="/my-bookings" element={<MyBookings />} />
-      <Route path="/bookings/:bookingId" element={<BookingDetails />} />
-      <Route path="/bookings/:bookingId/ticket" element={<BookingTicket />} />
-      <Route path="/checkout/return" element={<CheckoutReturn />} />
+            <Route
+        path="/my-bookings"
+        element={
+          <RequireAuth>
+            <MyBookings />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/bookings/:bookingId"
+        element={
+          <RequireAuth>
+            <BookingDetails />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/bookings/:bookingId/ticket"
+        element={
+          <RequireAuth>
+            <BookingTicket />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/checkout/return"
+        element={
+          <RequireAuth>
+            <CheckoutReturn />
+          </RequireAuth>
+        }
+      />
 
       <Route path="*" element={<Placeholder name="Page not found" />} />
     </Routes>
