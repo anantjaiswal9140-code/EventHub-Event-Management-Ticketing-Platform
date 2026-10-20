@@ -307,7 +307,9 @@ test(
       const event = await createEvent(undefined, {
         startAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
         endAt: new Date(Date.now() - 60 * 60 * 1000),
+        registrationClosesAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
       });
+
       const booking = await createBooking(event.id, randomUUID());
 
       const response = await checkIn(event.id, booking.ticketCode);
@@ -408,6 +410,349 @@ test(
           ).checkedInAt.toISOString(),
           bodies[0].data.checkedInAt
         );
+      }
+    );
+  }
+);
+
+test(
+  'organizer event management endpoints validate input, enforce ownership, and report event data',
+  {
+    skip:
+      !process.env.DATABASE_URL &&
+      'DATABASE_URL is required for integration tests.',
+  },
+  async (t) => {
+    const [{ default: app }, { prisma }] = await Promise.all([
+      import('../src/app.js'),
+      import('../src/db.js'),
+    ]);
+
+    const server = createServer(app);
+    const createdEventIds = [];
+    const createdBookingIds = [];
+    const createdUserIds = [];
+
+    t.after(async () => {
+      await prisma.booking.deleteMany({
+        where: { id: { in: createdBookingIds } },
+      });
+      await prisma.event.deleteMany({
+        where: { id: { in: createdEventIds } },
+      });
+      await prisma.user.deleteMany({
+        where: { id: { in: createdUserIds } },
+      });
+      if (server.listening) {
+        await new Promise((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve()))
+        );
+      }
+      await prisma.$disconnect();
+    });
+
+    await prisma.$connect();
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+    const organizer = await prisma.user.create({
+      data: {
+        name: 'Organizer Management Test',
+        email: `organizer-management-${randomUUID()}@example.test`,
+        passwordHash: 'not-used',
+        role: 'ORGANIZER',
+      },
+    });
+    const otherOrganizer = await prisma.user.create({
+      data: {
+        name: 'Other Organizer Management Test',
+        email: `other-organizer-management-${randomUUID()}@example.test`,
+        passwordHash: 'not-used',
+        role: 'ORGANIZER',
+      },
+    });
+    const attendee = await prisma.user.create({
+      data: {
+        name: 'Organizer Management Attendee',
+        email: `organizer-management-attendee-${randomUUID()}@example.test`,
+        passwordHash: 'not-used',
+      },
+    });
+    createdUserIds.push(organizer.id, otherOrganizer.id, attendee.id);
+
+    function tokenFor(userId = organizer.id) {
+      return jwt.sign({ id: userId }, process.env.JWT_ACCESS_SECRET, {
+        expiresIn: '5m',
+      });
+    }
+
+    async function request(path, { userId = organizer.id, ...options } = {}) {
+      const headers = {
+        ...(options.body === undefined
+          ? {}
+          : { 'content-type': 'application/json' }),
+        cookie: `accessToken=${tokenFor(userId)}`,
+        ...options.headers,
+      };
+
+      return fetch(`${baseUrl}${path}`, {
+        ...options,
+        headers,
+        ...(options.body !== undefined && typeof options.body !== 'string'
+          ? { body: JSON.stringify(options.body) }
+          : {}),
+      });
+    }
+
+    function eventInput(overrides = {}) {
+      const startAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const endAt = new Date(startAt.getTime() + 60 * 60 * 1000);
+      const registrationClosesAt = new Date(startAt.getTime() - 60 * 60 * 1000);
+
+      return {
+        title: `Organizer API test ${randomUUID()}`,
+        description: 'Organizer management integration test.',
+        category: 'Test',
+        venue: 'Test venue',
+        address: '1 Test Street',
+        city: 'Test City',
+        timezone: 'UTC',
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+        registrationClosesAt: registrationClosesAt.toISOString(),
+        capacity: 5,
+        priceMinor: 0,
+        currency: 'USD',
+        ...overrides,
+      };
+    }
+
+    async function createEvent({
+      ownerId = organizer.id,
+      status = 'PUBLISHED',
+      priceMinor = 0,
+      ...overrides
+    } = {}) {
+      const input = eventInput({ priceMinor, ...overrides });
+      const event = await prisma.event.create({
+        data: {
+          ...input,
+          startAt: new Date(input.startAt),
+          endAt: new Date(input.endAt),
+          registrationClosesAt: new Date(input.registrationClosesAt),
+          organizerId: ownerId,
+          status,
+        },
+      });
+      createdEventIds.push(event.id);
+      return event;
+    }
+
+    async function createBooking(
+      eventId,
+      { status = 'CONFIRMED', amountMinor = 0, ticketCode = randomUUID() } = {}
+    ) {
+      const booking = await prisma.booking.create({
+        data: {
+          userId: attendee.id,
+          eventId,
+          status,
+          amountMinor,
+          currency: 'USD',
+          eventSnapshot: { title: 'Organizer management test' },
+          ticketCode,
+        },
+      });
+      createdBookingIds.push(booking.id);
+      return booking;
+    }
+
+    await t.test(
+      'rejects invalid event capacity and date relationships with 400',
+      async () => {
+        for (const body of [
+          eventInput({ capacity: 0 }),
+          eventInput({
+            endAt: new Date(
+              Date.now() + 24 * 60 * 60 * 1000 - 60 * 1000
+            ).toISOString(),
+            startAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          }),
+          eventInput({
+            registrationClosesAt: new Date(
+              Date.now() + 25 * 60 * 60 * 1000
+            ).toISOString(),
+          }),
+        ]) {
+          const response = await request('/api/organizer/events', {
+            method: 'POST',
+            body,
+          });
+          assert.equal(response.status, 400);
+          assert.equal((await response.json()).error.code, 'VALIDATION_ERROR');
+        }
+      }
+    );
+
+    await t.test(
+      'lists owned events with booking, check-in, and remaining-seat counts',
+      async () => {
+        const event = await createEvent();
+        const booking = await createBooking(event.id);
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: { checkedInAt: new Date() },
+        });
+
+        const response = await request('/api/organizer/events');
+        const body = await response.json();
+
+        assert.equal(response.status, 200);
+        const result = body.data.find((item) => item.id === event.id);
+        assert.ok(result);
+        assert.equal(result.counts.bookings, 1);
+        assert.equal(result.counts.checkedIn, 1);
+        assert.equal(result.counts.seatsLeft, event.capacity - 1);
+        assert.ok(body.pagination);
+      }
+    );
+
+    await t.test('returns event details only to its organizer', async () => {
+      const event = await createEvent();
+
+      const ownResponse = await request(`/api/organizer/events/${event.id}`);
+      assert.equal(ownResponse.status, 200);
+      assert.equal((await ownResponse.json()).data.id, event.id);
+
+      const otherResponse = await request(`/api/organizer/events/${event.id}`, {
+        userId: otherOrganizer.id,
+      });
+      assert.equal(otherResponse.status, 404);
+    });
+
+    await t.test(
+      'locks price, capacity, and dates for published events with bookings',
+      async () => {
+        const event = await createEvent();
+        await createBooking(event.id);
+
+        for (const patch of [
+          { priceMinor: 100 },
+          { capacity: 6 },
+          { startAt: new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString() },
+        ]) {
+          const response = await request(`/api/organizer/events/${event.id}`, {
+            method: 'PATCH',
+            body: patch,
+          });
+          assert.equal(response.status, 409);
+          assert.equal((await response.json()).error.code, 'EVENT_EDIT_LOCKED');
+        }
+
+        const nonLockedResponse = await request(
+          `/api/organizer/events/${event.id}`,
+          {
+            method: 'PATCH',
+            body: { title: 'Updated title' },
+          }
+        );
+        assert.equal(nonLockedResponse.status, 200);
+      }
+    );
+
+    await t.test('deletes only draft events without bookings', async () => {
+      const draft = await createEvent({ status: 'DRAFT' });
+      const deleteResponse = await request(
+        `/api/organizer/events/${draft.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+      assert.equal(deleteResponse.status, 200);
+
+      const published = await createEvent();
+      const publishedResponse = await request(
+        `/api/organizer/events/${published.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+      assert.equal(publishedResponse.status, 409);
+
+      const draftWithBooking = await createEvent({ status: 'DRAFT' });
+      await createBooking(draftWithBooking.id);
+      const bookedDraftResponse = await request(
+        `/api/organizer/events/${draftWithBooking.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
+      assert.equal(bookedDraftResponse.status, 409);
+    });
+
+    await t.test('cancels free events and their active tickets', async () => {
+      const event = await createEvent();
+      const booking = await createBooking(event.id);
+
+      const response = await request(
+        `/api/organizer/events/${event.id}/cancel`,
+        {
+          method: 'POST',
+        }
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.data.status, 'CANCELLED');
+
+      const updatedBooking = await prisma.booking.findUnique({
+        where: { id: booking.id },
+      });
+      assert.equal(updatedBooking.status, 'CANCELLED');
+      assert.equal(updatedBooking.ticketCode, null);
+      assert.ok(updatedBooking.cancelledAt);
+    });
+
+    await t.test(
+      'rejects cancellation of paid events with bookings',
+      async () => {
+        const event = await createEvent({ priceMinor: 2500 });
+        await createBooking(event.id, { amountMinor: 2500 });
+
+        const response = await request(
+          `/api/organizer/events/${event.id}/cancel`,
+          {
+            method: 'POST',
+          }
+        );
+        assert.equal(response.status, 409);
+        assert.equal(
+          (await response.json()).error.code,
+          'PAID_EVENT_HAS_BOOKINGS'
+        );
+      }
+    );
+
+    await t.test(
+      'attendees endpoint supports name search and pagination with limited fields',
+      async () => {
+        const event = await createEvent();
+        const booking = await createBooking(event.id);
+
+        const response = await request(
+          `/api/organizer/events/${event.id}/attendees?search=Organizer%20Management%20Attendee&page=1&limit=1`
+        );
+        const body = await response.json();
+
+        assert.equal(response.status, 200);
+        assert.equal(body.pagination.page, 1);
+        assert.equal(body.pagination.limit, 1);
+        assert.equal(body.pagination.total, 1);
+        assert.deepEqual(body.data[0], {
+          name: 'Organizer Management Attendee',
+          bookingId: booking.id,
+          checkedInAt: null,
+        });
       }
     );
   }

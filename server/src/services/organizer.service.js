@@ -1,5 +1,7 @@
 import { prisma } from '../db.js';
 import { HttpError } from '../lib/errors.js';
+import { parsePagination } from '../lib/pagination.js';
+import { ACTIVE_STATUSES } from './booking.service.js';
 
 const EVENT_FIELDS = [
   'title',
@@ -45,6 +47,16 @@ const STRING_LIMITS = {
   currency: 3,
 };
 
+const DATE_FIELDS = ['startAt', 'endAt', 'registrationClosesAt'];
+
+const LOCKED_FIELDS = [
+  'priceMinor',
+  'capacity',
+  'startAt',
+  'endAt',
+  'registrationClosesAt',
+];
+
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -89,9 +101,7 @@ function validateEventFields(body, { partial = false } = {}) {
   }
 
   for (const field of EVENT_FIELDS) {
-    if (body[field] === undefined) {
-      continue;
-    }
+    if (body[field] === undefined) continue;
 
     const value = body[field];
 
@@ -128,11 +138,7 @@ function validateEventFields(body, { partial = false } = {}) {
       continue;
     }
 
-    if (
-      field === 'startAt' ||
-      field === 'endAt' ||
-      field === 'registrationClosesAt'
-    ) {
+    if (DATE_FIELDS.includes(field)) {
       try {
         cleaned[field] = parseDate(value, field);
       } catch (error) {
@@ -143,8 +149,8 @@ function validateEventFields(body, { partial = false } = {}) {
     }
 
     if (field === 'capacity') {
-      if (!Number.isInteger(value) || value < 0) {
-        errors[field] = 'Must be a non-negative integer.';
+      if (!Number.isInteger(value) || value < 1) {
+        errors[field] = 'Must be a positive integer.';
       } else {
         cleaned[field] = value;
       }
@@ -168,6 +174,27 @@ function validateEventFields(body, { partial = false } = {}) {
   return cleaned;
 }
 
+function validateEventDates(event) {
+  const errors = {};
+
+  if (event.startAt && event.endAt && event.endAt <= event.startAt) {
+    errors.endAt = 'The event end date must be after the start date.';
+  }
+
+  if (
+    event.registrationClosesAt &&
+    event.startAt &&
+    event.registrationClosesAt >= event.startAt
+  ) {
+    errors.registrationClosesAt =
+      'Registration must close before the event starts.';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    invalidInput('Please correct the invalid event dates.', errors);
+  }
+}
+
 function validateEventId(eventId) {
   if (typeof eventId !== 'string' || !UUID_REGEX.test(eventId)) {
     throw new HttpError(
@@ -178,10 +205,10 @@ function validateEventId(eventId) {
   }
 }
 
-async function findOwnedEvent(eventId, organizerId) {
+async function findOwnedEvent(eventId, organizerId, client = prisma) {
   validateEventId(eventId);
 
-  const event = await prisma.event.findFirst({
+  const event = await client.event.findFirst({
     where: {
       id: eventId,
       organizerId,
@@ -199,12 +226,78 @@ async function findOwnedEvent(eventId, organizerId) {
   return event;
 }
 
+function eventEditLocked() {
+  throw new HttpError(
+    409,
+    'EVENT_EDIT_LOCKED',
+    'Price, capacity and dates cannot be changed after a published event has bookings.'
+  );
+}
+
+async function hasAnyBookings(eventId, client = prisma) {
+  return (await client.booking.count({ where: { eventId } })) > 0;
+}
+
+async function getEventCounts(eventIds) {
+  if (eventIds.length === 0) return new Map();
+
+  const counts = await prisma.booking.groupBy({
+    by: ['eventId'],
+    where: {
+      eventId: { in: eventIds },
+      status: { in: ACTIVE_STATUSES },
+    },
+    _count: { _all: true },
+  });
+
+  const checkedIn = await prisma.booking.groupBy({
+    by: ['eventId'],
+    where: {
+      eventId: { in: eventIds },
+      status: 'CONFIRMED',
+      checkedInAt: { not: null },
+    },
+    _count: { _all: true },
+  });
+
+  const activeByEvent = new Map(
+    counts.map((item) => [item.eventId, item._count._all])
+  );
+
+  const checkedInByEvent = new Map(
+    checkedIn.map((item) => [item.eventId, item._count._all])
+  );
+
+  return new Map(
+    eventIds.map((id) => [
+      id,
+      {
+        bookings: activeByEvent.get(id) ?? 0,
+        checkedIn: checkedInByEvent.get(id) ?? 0,
+      },
+    ])
+  );
+}
+
+function addCounts(event, counts) {
+  const count = counts.get(event.id) ?? { bookings: 0, checkedIn: 0 };
+
+  return {
+    ...event,
+    counts: {
+      bookings: count.bookings,
+      checkedIn: count.checkedIn,
+      seatsLeft: Math.max(0, event.capacity - count.bookings),
+    },
+  };
+}
+
 export async function createOrganizerEvent(organizerId, body) {
   validateBody(body);
 
   const data = validateEventFields(body);
+  validateEventDates(data);
 
-  // Ownership comes from the authenticated user, never the request body.
   return prisma.event.create({
     data: {
       ...data,
@@ -227,7 +320,18 @@ export async function updateOrganizerEvent(eventId, organizerId, body) {
     invalidInput('Provide at least one editable event field.');
   }
 
+  // Lock price, capacity, and dates for published events with bookings.
+  if (
+    event.status === 'PUBLISHED' &&
+    editableFields.some((field) => LOCKED_FIELDS.includes(field)) &&
+    (await hasAnyBookings(event.id))
+  ) {
+    eventEditLocked();
+  }
+
+  // Validate fields only after checking the booking lock.
   const data = validateEventFields(body, { partial: true });
+  validateEventDates({ ...event, ...data });
 
   return prisma.event.update({
     where: { id: event.id },
@@ -257,7 +361,12 @@ export async function publishOrganizerEvent(eventId, organizerId) {
     errors.endAt = 'The event end date must be after the start date.';
   }
 
-  if (event.capacity <= 0) {
+  if (event.registrationClosesAt >= event.startAt) {
+    errors.registrationClosesAt =
+      'Registration must close before the event starts.';
+  }
+
+  if (event.capacity < 1) {
     errors.capacity = 'Capacity must be greater than zero.';
   }
 
@@ -276,6 +385,175 @@ export async function publishOrganizerEvent(eventId, organizerId) {
     where: { id: event.id },
     data: { status: 'PUBLISHED' },
   });
+}
+
+export async function listOrganizerEvents(organizerId, query = {}) {
+  const { page, limit, skip } = parsePagination(query);
+
+  const where = { organizerId };
+
+  const [total, events] = await prisma.$transaction([
+    prisma.event.count({ where }),
+    prisma.event.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip,
+      take: limit,
+    }),
+  ]);
+
+  const counts = await getEventCounts(events.map((event) => event.id));
+
+  return {
+    data: events.map((event) => addCounts(event, counts)),
+    pagination: { page, limit, total },
+  };
+}
+
+export async function getOrganizerEvent(eventId, organizerId) {
+  const event = await findOwnedEvent(eventId, organizerId);
+  const counts = await getEventCounts([event.id]);
+
+  return addCounts(event, counts);
+}
+
+export async function deleteOrganizerEvent(eventId, organizerId) {
+  return prisma.$transaction(async (tx) => {
+    const event = await findOwnedEvent(eventId, organizerId, tx);
+
+    if (event.status !== 'DRAFT') {
+      throw new HttpError(
+        409,
+        'EVENT_NOT_DELETABLE',
+        'Only draft events can be deleted.'
+      );
+    }
+
+    if (await hasAnyBookings(event.id, tx)) {
+      throw new HttpError(
+        409,
+        'EVENT_HAS_BOOKINGS',
+        'An event with bookings cannot be deleted.'
+      );
+    }
+
+    await tx.event.delete({ where: { id: event.id } });
+
+    return { id: event.id, deleted: true };
+  });
+}
+
+export async function cancelOrganizerEvent(eventId, organizerId) {
+  return prisma.$transaction(async (tx) => {
+    const event = await findOwnedEvent(eventId, organizerId, tx);
+
+    if (event.status === 'CANCELLED') {
+      return event;
+    }
+
+    if (event.status !== 'PUBLISHED') {
+      throw new HttpError(
+        409,
+        'EVENT_NOT_CANCELLABLE',
+        'Only published events can be cancelled.'
+      );
+    }
+
+    const bookingCount = await tx.booking.count({
+      where: { eventId: event.id },
+    });
+
+    if (event.priceMinor > 0 && bookingCount > 0) {
+      throw new HttpError(
+        409,
+        'PAID_EVENT_HAS_BOOKINGS',
+        'A paid event with bookings cannot be cancelled through this endpoint.'
+      );
+    }
+
+    const now = new Date();
+
+    await tx.booking.updateMany({
+      where: {
+        eventId: event.id,
+        status: { in: ACTIVE_STATUSES },
+      },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: now,
+        ticketCode: null,
+      },
+    });
+
+    return tx.event.update({
+      where: { id: event.id },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: now,
+      },
+    });
+  });
+}
+
+export async function listOrganizerAttendees(eventId, organizerId, query = {}) {
+  const event = await findOwnedEvent(eventId, organizerId);
+  const { page, limit, skip } = parsePagination(query);
+
+  const search =
+    query.search === undefined
+      ? ''
+      : typeof query.search === 'string'
+        ? query.search.trim()
+        : null;
+
+  if (search === null || search.length > 100) {
+    throw new HttpError(
+      400,
+      'INVALID_QUERY',
+      'Search must be a string of at most 100 characters.'
+    );
+  }
+
+  const where = {
+    eventId: event.id,
+    status: 'CONFIRMED',
+    ...(search
+      ? {
+          user: {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        }
+      : {}),
+  };
+
+  const [total, bookings] = await prisma.$transaction([
+    prisma.booking.count({ where }),
+    prisma.booking.findMany({
+      where,
+      select: {
+        id: true,
+        checkedInAt: true,
+        user: {
+          select: { name: true },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip,
+      take: limit,
+    }),
+  ]);
+
+  return {
+    data: bookings.map((booking) => ({
+      name: booking.user.name,
+      bookingId: booking.id,
+      checkedInAt: booking.checkedInAt,
+    })),
+    pagination: { page, limit, total },
+  };
 }
 
 export async function checkInOrganizerTicket(eventId, organizerId, body) {
@@ -398,6 +676,7 @@ export async function checkInOrganizerTicket(eventId, organizerId, body) {
     }
 
     const checkedInAt = now;
+
     await tx.booking.update({
       where: { id: booking.id },
       data: { checkedInAt },

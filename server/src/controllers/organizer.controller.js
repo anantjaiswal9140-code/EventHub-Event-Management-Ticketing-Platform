@@ -3,14 +3,17 @@ import {
   updateOrganizerEvent,
   publishOrganizerEvent,
   checkInOrganizerTicket,
+  listOrganizerEvents,
+  getOrganizerEvent,
+  deleteOrganizerEvent,
+  cancelOrganizerEvent,
+  listOrganizerAttendees,
 } from '../services/organizer.service.js';
 
 export async function createEvent(req, res) {
   const event = await createOrganizerEvent(req.user.id, req.body);
 
-  return res.status(201).json({
-    data: event,
-  });
+  return res.status(201).json({ data: event });
 }
 
 export async function updateEvent(req, res) {
@@ -20,17 +23,13 @@ export async function updateEvent(req, res) {
     req.body
   );
 
-  return res.status(200).json({
-    data: event,
-  });
+  return res.status(200).json({ data: event });
 }
 
 export async function publishEvent(req, res) {
   const event = await publishOrganizerEvent(req.params.id, req.user.id);
 
-  return res.status(200).json({
-    data: event,
-  });
+  return res.status(200).json({ data: event });
 }
 
 export async function checkInTicket(req, res) {
@@ -40,7 +39,39 @@ export async function checkInTicket(req, res) {
     req.body
   );
 
-  return res.status(200).json({
-    data: result,
-  });
+  return res.status(200).json({ data: result });
+}
+
+export async function listEvents(req, res) {
+  const result = await listOrganizerEvents(req.user.id, req.query);
+
+  return res.status(200).json(result);
+}
+
+export async function getEvent(req, res) {
+  const event = await getOrganizerEvent(req.params.id, req.user.id);
+
+  return res.status(200).json({ data: event });
+}
+
+export async function deleteEvent(req, res) {
+  const result = await deleteOrganizerEvent(req.params.id, req.user.id);
+
+  return res.status(200).json({ data: result });
+}
+
+export async function cancelEvent(req, res) {
+  const event = await cancelOrganizerEvent(req.params.id, req.user.id);
+
+  return res.status(200).json({ data: event });
+}
+
+export async function listAttendees(req, res) {
+  const result = await listOrganizerAttendees(
+    req.params.id,
+    req.user.id,
+    req.query
+  );
+
+  return res.status(200).json(result);
 }
