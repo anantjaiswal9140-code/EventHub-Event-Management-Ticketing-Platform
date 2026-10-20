@@ -28,3 +28,42 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+@media print {
+  :root,
+  body,
+  #root {
+    min-height: 0;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .ticket-print,
+  .ticket-print * {
+    visibility: visible !important;
+    color: #111 !important;
+    border-color: #aaa !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .ticket-print {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  @page {
+    margin: 16mm;
+  }
+}

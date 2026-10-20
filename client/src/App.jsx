@@ -2,6 +2,10 @@ import { Route, Routes } from 'react-router';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
+import BookingDetails from './pages/BookingDetails.jsx';
+import BookingTicket from './pages/BookingTicket.jsx';
+import CheckoutReturn from './pages/CheckoutReturn.jsx';
+import MyBookings from './pages/MyBookings.jsx';
 import Profile from './pages/Profile.jsx';
 import RequireAuth from './auth/RequireAuth.jsx';
 
@@ -84,18 +88,37 @@ function App() {
         element={<Placeholder name="Attendees and check-in" />}
       />
 
-      <Route path="/my-bookings" element={<Placeholder name="My bookings" />} />
+            <Route
+        path="/my-bookings"
+        element={
+          <RequireAuth>
+            <MyBookings />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/bookings/:bookingId"
-        element={<Placeholder name="Booking" />}
+        element={
+          <RequireAuth>
+            <BookingDetails />
+          </RequireAuth>
+        }
       />
       <Route
         path="/bookings/:bookingId/ticket"
-        element={<Placeholder name="Ticket" />}
+        element={
+          <RequireAuth>
+            <BookingTicket />
+          </RequireAuth>
+        }
       />
       <Route
         path="/checkout/return"
-        element={<Placeholder name="Checkout return" />}
+        element={
+          <RequireAuth>
+            <CheckoutReturn />
+          </RequireAuth>
+        }
       />
 
       <Route path="*" element={<Placeholder name="Page not found" />} />
