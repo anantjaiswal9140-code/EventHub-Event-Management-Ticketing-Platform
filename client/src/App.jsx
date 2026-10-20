@@ -2,6 +2,10 @@ import { Route, Routes } from 'react-router';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
+import BookingDetails from './pages/BookingDetails.jsx';
+import BookingTicket from './pages/BookingTicket.jsx';
+import CheckoutReturn from './pages/CheckoutReturn.jsx';
+import MyBookings from './pages/MyBookings.jsx';
 
 function Placeholder({ name }) {
   return <h1 className="p-8 text-2xl font-bold">{name} (coming soon)</h1>;
@@ -51,19 +55,10 @@ function App() {
         element={<Placeholder name="Attendees and check-in" />}
       />
 
-      <Route path="/my-bookings" element={<Placeholder name="My bookings" />} />
-      <Route
-        path="/bookings/:bookingId"
-        element={<Placeholder name="Booking" />}
-      />
-      <Route
-        path="/bookings/:bookingId/ticket"
-        element={<Placeholder name="Ticket" />}
-      />
-      <Route
-        path="/checkout/return"
-        element={<Placeholder name="Checkout return" />}
-      />
+      <Route path="/my-bookings" element={<MyBookings />} />
+      <Route path="/bookings/:bookingId" element={<BookingDetails />} />
+      <Route path="/bookings/:bookingId/ticket" element={<BookingTicket />} />
+      <Route path="/checkout/return" element={<CheckoutReturn />} />
 
       <Route path="*" element={<Placeholder name="Page not found" />} />
     </Routes>
