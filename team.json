@@ -1,0 +1,27 @@
+{
+  "team_number": "T0025",
+  "group_lead": {
+    "name": "Dittya Maity",
+    "enrollment_no": "2501010150",
+    "github": "thedittya471"
+  },
+  "members": [
+    {
+      "name": "Kamlesh Patade",
+      "enrollment_no": "2501010210",
+      "github": "kamleshpatade1"
+    },
+    {
+      "name": "Anant Jaiswal",
+      "enrollment_no": "2501010053",
+      "github": "anantjaiswal9140-code"
+    },
+    {
+      "name": "Shivans Rajesh Gupta",
+      "enrollment_no": "2501010430",
+      "github": "ShivansGupta25"
+    }
+  ],
+  "postgres_version": "18.3",
+  "laptop_used_for_benchmarks": "MacBook Pro (Apple M4, 16 GB)"
+}

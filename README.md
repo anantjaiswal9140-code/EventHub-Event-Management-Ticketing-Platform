@@ -22,12 +22,12 @@
 
 | Role | Name | Enrollment No. | GitHub Username |
 |------|------|----------------|-----------------|
-| Group Lead | | | |
-| Member 2 | | | |
-| Member 3 | | | |
-| Member 4 | | | |
+| Group Lead | Dittya Maity | 2501010150 | thedittya471 |
+| Member 2 | Kamlesh Patade | 2501010210 | kamleshpatade1 |
+| Member 3 | Anant Jaiswal | 2501010053 | anantjaiswal9140-code |
+| Member 4 | Shivans Rajesh Gupta | 2501010430 | ShivansGupta25 |
 
-**Team No.:** ____ · **Section:** ____ · **Repository URL:** ____
+**Team No.:** T0025 · **Section:** B · **Repository URL:** https://github.com/thedittya471/EventHub-Event-Management-Ticketing-Platform_DE_Project_2026
 
 ---
 
