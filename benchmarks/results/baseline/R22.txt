@@ -1,0 +1,45 @@
+=== R22 run 1 ===
+Limit  (cost=2973.47..2973.53 rows=25 width=36) (actual time=13.550..13.555 rows=25.00 loops=1)
+  Buffers: shared hit=1291
+  ->  Sort  (cost=2969.72..2977.57 rows=3140 width=36) (actual time=13.310..13.515 rows=1525.00 loops=1)
+        Sort Key: created_at DESC
+        Sort Method: quicksort  Memory: 311kB
+        Buffers: shared hit=1291
+        ->  Seq Scan on comments  (cost=0.00..2788.00 rows=3140 width=36) (actual time=0.024..12.468 rows=3046.00 loops=1)
+              Filter: is_hidden
+              Rows Removed by Filter: 146954
+              Buffers: shared hit=1288
+Planning:
+  Buffers: shared hit=113
+Planning Time: 1.746 ms
+Execution Time: 13.597 ms
+=== R22 run 2 ===
+Limit  (cost=2973.47..2973.53 rows=25 width=36) (actual time=18.738..18.744 rows=25.00 loops=1)
+  Buffers: shared hit=1291
+  ->  Sort  (cost=2969.72..2977.57 rows=3140 width=36) (actual time=18.429..18.669 rows=1525.00 loops=1)
+        Sort Key: created_at DESC
+        Sort Method: quicksort  Memory: 311kB
+        Buffers: shared hit=1291
+        ->  Seq Scan on comments  (cost=0.00..2788.00 rows=3140 width=36) (actual time=0.025..17.434 rows=3046.00 loops=1)
+              Filter: is_hidden
+              Rows Removed by Filter: 146954
+              Buffers: shared hit=1288
+Planning:
+  Buffers: shared hit=113
+Planning Time: 0.940 ms
+Execution Time: 18.815 ms
+=== R22 run 3 ===
+Limit  (cost=2973.47..2973.53 rows=25 width=36) (actual time=17.908..17.913 rows=25.00 loops=1)
+  Buffers: shared hit=1291
+  ->  Sort  (cost=2969.72..2977.57 rows=3140 width=36) (actual time=17.538..17.863 rows=1525.00 loops=1)
+        Sort Key: created_at DESC
+        Sort Method: quicksort  Memory: 311kB
+        Buffers: shared hit=1291
+        ->  Seq Scan on comments  (cost=0.00..2788.00 rows=3140 width=36) (actual time=0.027..16.595 rows=3046.00 loops=1)
+              Filter: is_hidden
+              Rows Removed by Filter: 146954
+              Buffers: shared hit=1288
+Planning:
+  Buffers: shared hit=113
+Planning Time: 0.971 ms
+Execution Time: 17.971 ms

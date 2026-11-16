@@ -1,0 +1,81 @@
+=== R20 run 1 ===
+Limit  (cost=5067.97..5067.99 rows=10 width=12) (actual time=28.570..28.575 rows=10.00 loops=1)
+  Buffers: shared hit=2083
+  ->  Sort  (cost=5067.97..5088.65 rows=8272 width=12) (actual time=28.569..28.573 rows=10.00 loops=1)
+        Sort Key: (count(*)) DESC
+        Sort Method: top-N heapsort  Memory: 25kB
+        Buffers: shared hit=2083
+        ->  HashAggregate  (cost=4806.49..4889.21 rows=8272 width=12) (actual time=28.061..28.363 rows=3239.00 loops=1)
+              Group Key: c.post_id
+              Batches: 1  Memory Usage: 409kB
+              Buffers: shared hit=2080
+              ->  Hash Join  (cost=1583.36..4765.13 rows=8272 width=4) (actual time=5.678..26.314 rows=12975.00 loops=1)
+                    Hash Cond: (c.post_id = p.post_id)
+                    Buffers: shared hit=2080
+                    ->  Seq Scan on comments c  (cost=0.00..2788.00 rows=150000 width=4) (actual time=0.011..10.389 rows=150000.00 loops=1)
+                          Buffers: shared hit=1288
+                    ->  Hash  (cost=1542.00..1542.00 rows=3309 width=4) (actual time=5.544..5.545 rows=3296.00 loops=1)
+                          Buckets: 4096  Batches: 1  Memory Usage: 148kB
+                          Buffers: shared hit=792
+                          ->  Seq Scan on posts p  (cost=0.00..1542.00 rows=3309 width=4) (actual time=4.903..5.308 rows=3296.00 loops=1)
+                                Filter: (created_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+                                Rows Removed by Filter: 56704
+                                Buffers: shared hit=792
+Planning:
+  Buffers: shared hit=159
+Planning Time: 1.146 ms
+Execution Time: 28.718 ms
+=== R20 run 2 ===
+Limit  (cost=5067.97..5067.99 rows=10 width=12) (actual time=27.497..27.500 rows=10.00 loops=1)
+  Buffers: shared hit=2083
+  ->  Sort  (cost=5067.97..5088.65 rows=8272 width=12) (actual time=27.496..27.498 rows=10.00 loops=1)
+        Sort Key: (count(*)) DESC
+        Sort Method: top-N heapsort  Memory: 25kB
+        Buffers: shared hit=2083
+        ->  HashAggregate  (cost=4806.49..4889.21 rows=8272 width=12) (actual time=26.979..27.273 rows=3239.00 loops=1)
+              Group Key: c.post_id
+              Batches: 1  Memory Usage: 409kB
+              Buffers: shared hit=2080
+              ->  Hash Join  (cost=1583.36..4765.13 rows=8272 width=4) (actual time=6.039..25.195 rows=12975.00 loops=1)
+                    Hash Cond: (c.post_id = p.post_id)
+                    Buffers: shared hit=2080
+                    ->  Seq Scan on comments c  (cost=0.00..2788.00 rows=150000 width=4) (actual time=0.009..7.907 rows=150000.00 loops=1)
+                          Buffers: shared hit=1288
+                    ->  Hash  (cost=1542.00..1542.00 rows=3309 width=4) (actual time=6.014..6.015 rows=3296.00 loops=1)
+                          Buckets: 4096  Batches: 1  Memory Usage: 148kB
+                          Buffers: shared hit=792
+                          ->  Seq Scan on posts p  (cost=0.00..1542.00 rows=3309 width=4) (actual time=5.376..5.769 rows=3296.00 loops=1)
+                                Filter: (created_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+                                Rows Removed by Filter: 56704
+                                Buffers: shared hit=792
+Planning:
+  Buffers: shared hit=159
+Planning Time: 0.748 ms
+Execution Time: 27.637 ms
+=== R20 run 3 ===
+Limit  (cost=5067.97..5067.99 rows=10 width=12) (actual time=28.135..28.138 rows=10.00 loops=1)
+  Buffers: shared hit=2083
+  ->  Sort  (cost=5067.97..5088.65 rows=8272 width=12) (actual time=28.134..28.135 rows=10.00 loops=1)
+        Sort Key: (count(*)) DESC
+        Sort Method: top-N heapsort  Memory: 25kB
+        Buffers: shared hit=2083
+        ->  HashAggregate  (cost=4806.49..4889.21 rows=8272 width=12) (actual time=27.618..27.917 rows=3239.00 loops=1)
+              Group Key: c.post_id
+              Batches: 1  Memory Usage: 409kB
+              Buffers: shared hit=2080
+              ->  Hash Join  (cost=1583.36..4765.13 rows=8272 width=4) (actual time=6.272..25.863 rows=12975.00 loops=1)
+                    Hash Cond: (c.post_id = p.post_id)
+                    Buffers: shared hit=2080
+                    ->  Seq Scan on comments c  (cost=0.00..2788.00 rows=150000 width=4) (actual time=0.009..8.342 rows=150000.00 loops=1)
+                          Buffers: shared hit=1288
+                    ->  Hash  (cost=1542.00..1542.00 rows=3309 width=4) (actual time=6.247..6.248 rows=3296.00 loops=1)
+                          Buckets: 4096  Batches: 1  Memory Usage: 148kB
+                          Buffers: shared hit=792
+                          ->  Seq Scan on posts p  (cost=0.00..1542.00 rows=3309 width=4) (actual time=5.533..5.965 rows=3296.00 loops=1)
+                                Filter: (created_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+                                Rows Removed by Filter: 56704
+                                Buffers: shared hit=792
+Planning:
+  Buffers: shared hit=159
+Planning Time: 0.733 ms
+Execution Time: 28.269 ms

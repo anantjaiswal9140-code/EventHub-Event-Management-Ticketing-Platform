@@ -1,0 +1,39 @@
+=== R23 run 1 ===
+Result  (cost=8.44..8.45 rows=1 width=1) (actual time=0.022..0.022 rows=1.00 loops=1)
+  Buffers: shared hit=3
+  InitPlan 1
+    ->  Index Only Scan using likes_pkey on likes  (cost=0.42..8.44 rows=1 width=0) (actual time=0.021..0.021 rows=0.00 loops=1)
+          Index Cond: ((user_id = 1042) AND (post_id = 59689))
+          Heap Fetches: 0
+          Index Searches: 1
+          Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=70
+Planning Time: 0.539 ms
+Execution Time: 0.062 ms
+=== R23 run 2 ===
+Result  (cost=8.44..8.45 rows=1 width=1) (actual time=0.019..0.019 rows=1.00 loops=1)
+  Buffers: shared hit=3
+  InitPlan 1
+    ->  Index Only Scan using likes_pkey on likes  (cost=0.42..8.44 rows=1 width=0) (actual time=0.017..0.018 rows=0.00 loops=1)
+          Index Cond: ((user_id = 1042) AND (post_id = 59689))
+          Heap Fetches: 0
+          Index Searches: 1
+          Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=70
+Planning Time: 0.470 ms
+Execution Time: 0.062 ms
+=== R23 run 3 ===
+Result  (cost=8.44..8.45 rows=1 width=1) (actual time=0.013..0.013 rows=1.00 loops=1)
+  Buffers: shared hit=3
+  InitPlan 1
+    ->  Index Only Scan using likes_pkey on likes  (cost=0.42..8.44 rows=1 width=0) (actual time=0.012..0.012 rows=0.00 loops=1)
+          Index Cond: ((user_id = 1042) AND (post_id = 59689))
+          Heap Fetches: 0
+          Index Searches: 1
+          Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=70
+Planning Time: 0.290 ms
+Execution Time: 0.041 ms

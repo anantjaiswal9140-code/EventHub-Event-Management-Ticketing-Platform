@@ -1,0 +1,96 @@
+=== R04 run 1 ===
+Sort  (cost=5793.34..5793.34 rows=3 width=40) (actual time=28.032..29.918 rows=12.00 loops=1)
+  Sort Key: c.created_at
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=2582
+  ->  GroupAggregate  (cost=5793.26..5793.31 rows=3 width=40) (actual time=27.986..29.883 rows=12.00 loops=1)
+        Group Key: c.comment_id
+        Buffers: shared hit=2579
+        ->  Sort  (cost=5793.26..5793.27 rows=3 width=36) (actual time=27.974..29.859 rows=12.00 loops=1)
+              Sort Key: c.comment_id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=2579
+              ->  Gather  (cost=3390.97..5793.24 rows=3 width=36) (actual time=27.810..29.826 rows=12.00 loops=1)
+                    Workers Planned: 1
+                    Workers Launched: 1
+                    Buffers: shared hit=2576
+                    ->  Parallel Hash Right Join  (cost=2390.97..4792.94 rows=2 width=36) (actual time=21.796..23.220 rows=6.00 loops=2)
+                          Hash Cond: (r.parent_comment_id = c.comment_id)
+                          Buffers: shared hit=2576
+                          ->  Parallel Seq Scan on comments r  (cost=0.00..2170.35 rows=88235 width=8) (actual time=0.008..4.426 rows=75000.00 loops=2)
+                                Buffers: shared hit=1288
+                          ->  Parallel Hash  (cost=2390.94..2390.94 rows=2 width=32) (actual time=14.422..14.423 rows=6.00 loops=2)
+                                Buckets: 1024  Batches: 1  Memory Usage: 72kB
+                                Buffers: shared hit=1288
+                                ->  Parallel Seq Scan on comments c  (cost=0.00..2390.94 rows=2 width=32) (actual time=0.783..14.382 rows=6.00 loops=2)
+                                      Filter: ((parent_comment_id IS NULL) AND (NOT is_hidden) AND (post_id = 59689))
+                                      Rows Removed by Filter: 74994
+                                      Buffers: shared hit=1288
+Planning:
+  Buffers: shared hit=150
+Planning Time: 2.275 ms
+Execution Time: 30.099 ms
+=== R04 run 2 ===
+Sort  (cost=5793.34..5793.34 rows=3 width=40) (actual time=22.093..25.085 rows=12.00 loops=1)
+  Sort Key: c.created_at
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=2582
+  ->  GroupAggregate  (cost=5793.26..5793.31 rows=3 width=40) (actual time=22.057..25.062 rows=12.00 loops=1)
+        Group Key: c.comment_id
+        Buffers: shared hit=2579
+        ->  Sort  (cost=5793.26..5793.27 rows=3 width=36) (actual time=22.045..25.036 rows=12.00 loops=1)
+              Sort Key: c.comment_id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=2579
+              ->  Gather  (cost=3390.97..5793.24 rows=3 width=36) (actual time=21.881..25.012 rows=12.00 loops=1)
+                    Workers Planned: 1
+                    Workers Launched: 1
+                    Buffers: shared hit=2576
+                    ->  Parallel Hash Right Join  (cost=2390.97..4792.94 rows=2 width=36) (actual time=17.101..18.683 rows=6.00 loops=2)
+                          Hash Cond: (r.parent_comment_id = c.comment_id)
+                          Buffers: shared hit=2576
+                          ->  Parallel Seq Scan on comments r  (cost=0.00..2170.35 rows=88235 width=8) (actual time=0.008..4.808 rows=75000.00 loops=2)
+                                Buffers: shared hit=1288
+                          ->  Parallel Hash  (cost=2390.94..2390.94 rows=2 width=32) (actual time=9.053..9.054 rows=6.00 loops=2)
+                                Buckets: 1024  Batches: 1  Memory Usage: 72kB
+                                Buffers: shared hit=1288
+                                ->  Parallel Seq Scan on comments c  (cost=0.00..2390.94 rows=2 width=32) (actual time=0.758..9.022 rows=6.00 loops=2)
+                                      Filter: ((parent_comment_id IS NULL) AND (NOT is_hidden) AND (post_id = 59689))
+                                      Rows Removed by Filter: 74994
+                                      Buffers: shared hit=1288
+Planning:
+  Buffers: shared hit=150
+Planning Time: 0.926 ms
+Execution Time: 25.183 ms
+=== R04 run 3 ===
+Sort  (cost=5793.34..5793.34 rows=3 width=40) (actual time=21.925..24.406 rows=12.00 loops=1)
+  Sort Key: c.created_at
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=2582
+  ->  GroupAggregate  (cost=5793.26..5793.31 rows=3 width=40) (actual time=21.888..24.381 rows=12.00 loops=1)
+        Group Key: c.comment_id
+        Buffers: shared hit=2579
+        ->  Sort  (cost=5793.26..5793.27 rows=3 width=36) (actual time=21.872..24.351 rows=12.00 loops=1)
+              Sort Key: c.comment_id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=2579
+              ->  Gather  (cost=3390.97..5793.24 rows=3 width=36) (actual time=21.690..24.320 rows=12.00 loops=1)
+                    Workers Planned: 1
+                    Workers Launched: 1
+                    Buffers: shared hit=2576
+                    ->  Parallel Hash Right Join  (cost=2390.97..4792.94 rows=2 width=36) (actual time=16.818..18.286 rows=6.00 loops=2)
+                          Hash Cond: (r.parent_comment_id = c.comment_id)
+                          Buffers: shared hit=2576
+                          ->  Parallel Seq Scan on comments r  (cost=0.00..2170.35 rows=88235 width=8) (actual time=0.008..5.351 rows=75000.00 loops=2)
+                                Buffers: shared hit=1288
+                          ->  Parallel Hash  (cost=2390.94..2390.94 rows=2 width=32) (actual time=7.870..7.870 rows=6.00 loops=2)
+                                Buckets: 1024  Batches: 1  Memory Usage: 72kB
+                                Buffers: shared hit=1288
+                                ->  Parallel Seq Scan on comments c  (cost=0.00..2390.94 rows=2 width=32) (actual time=1.489..7.832 rows=6.00 loops=2)
+                                      Filter: ((parent_comment_id IS NULL) AND (NOT is_hidden) AND (post_id = 59689))
+                                      Rows Removed by Filter: 74994
+                                      Buffers: shared hit=1288
+Planning:
+  Buffers: shared hit=150
+Planning Time: 0.881 ms
+Execution Time: 24.644 ms

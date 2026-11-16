@@ -1,0 +1,93 @@
+=== R05 run 1 ===
+Limit  (cost=3604.28..3604.35 rows=30 width=12) (actual time=29.876..29.882 rows=30.00 loops=1)
+  Buffers: shared hit=11468
+  ->  Sort  (cost=3604.28..3604.69 rows=165 width=12) (actual time=29.874..29.878 rows=30.00 loops=1)
+        Sort Key: p.like_count DESC
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=11468
+        ->  Nested Loop  (cost=1.93..3599.40 rows=165 width=12) (actual time=28.494..29.825 rows=198.00 loops=1)
+              Buffers: shared hit=11465
+              ->  Hash Join  (cost=1.64..2592.76 rows=3000 width=4) (actual time=0.056..20.820 rows=3600.00 loops=1)
+                    Hash Cond: (ph.hashtag_id = h.hashtag_id)
+                    Buffers: shared hit=665
+                    ->  Seq Scan on post_hashtags ph  (cost=0.00..2164.00 rows=150000 width=8) (actual time=0.017..10.565 rows=150000.00 loops=1)
+                          Buffers: shared hit=664
+                    ->  Hash  (cost=1.62..1.62 rows=1 width=4) (actual time=0.023..0.024 rows=1.00 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=1
+                          ->  Seq Scan on hashtags h  (cost=0.00..1.62 rows=1 width=4) (actual time=0.009..0.013 rows=1.00 loops=1)
+                                Filter: ((tag)::text = 'travel'::text)
+                                Rows Removed by Filter: 49
+                                Buffers: shared hit=1
+              ->  Index Scan using posts_pkey on posts p  (cost=0.29..0.34 rows=1 width=12) (actual time=0.002..0.002 rows=0.06 loops=3600)
+                    Index Cond: (post_id = ph.post_id)
+                    Filter: (created_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+                    Rows Removed by Filter: 1
+                    Index Searches: 3600
+                    Buffers: shared hit=10800
+Planning:
+  Buffers: shared hit=211
+Planning Time: 3.201 ms
+Execution Time: 29.953 ms
+=== R05 run 2 ===
+Limit  (cost=3604.28..3604.35 rows=30 width=12) (actual time=29.402..29.407 rows=30.00 loops=1)
+  Buffers: shared hit=11468
+  ->  Sort  (cost=3604.28..3604.69 rows=165 width=12) (actual time=29.400..29.402 rows=30.00 loops=1)
+        Sort Key: p.like_count DESC
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=11468
+        ->  Nested Loop  (cost=1.93..3599.40 rows=165 width=12) (actual time=28.055..29.351 rows=198.00 loops=1)
+              Buffers: shared hit=11465
+              ->  Hash Join  (cost=1.64..2592.76 rows=3000 width=4) (actual time=0.053..20.071 rows=3600.00 loops=1)
+                    Hash Cond: (ph.hashtag_id = h.hashtag_id)
+                    Buffers: shared hit=665
+                    ->  Seq Scan on post_hashtags ph  (cost=0.00..2164.00 rows=150000 width=8) (actual time=0.013..9.313 rows=150000.00 loops=1)
+                          Buffers: shared hit=664
+                    ->  Hash  (cost=1.62..1.62 rows=1 width=4) (actual time=0.021..0.021 rows=1.00 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=1
+                          ->  Seq Scan on hashtags h  (cost=0.00..1.62 rows=1 width=4) (actual time=0.008..0.012 rows=1.00 loops=1)
+                                Filter: ((tag)::text = 'travel'::text)
+                                Rows Removed by Filter: 49
+                                Buffers: shared hit=1
+              ->  Index Scan using posts_pkey on posts p  (cost=0.29..0.34 rows=1 width=12) (actual time=0.002..0.002 rows=0.06 loops=3600)
+                    Index Cond: (post_id = ph.post_id)
+                    Filter: (created_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+                    Rows Removed by Filter: 1
+                    Index Searches: 3600
+                    Buffers: shared hit=10800
+Planning:
+  Buffers: shared hit=211
+Planning Time: 1.931 ms
+Execution Time: 29.479 ms
+=== R05 run 3 ===
+Limit  (cost=3604.28..3604.35 rows=30 width=12) (actual time=28.685..28.692 rows=30.00 loops=1)
+  Buffers: shared hit=11468
+  ->  Sort  (cost=3604.28..3604.69 rows=165 width=12) (actual time=28.683..28.686 rows=30.00 loops=1)
+        Sort Key: p.like_count DESC
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=11468
+        ->  Nested Loop  (cost=1.93..3599.40 rows=165 width=12) (actual time=27.304..28.634 rows=198.00 loops=1)
+              Buffers: shared hit=11465
+              ->  Hash Join  (cost=1.64..2592.76 rows=3000 width=4) (actual time=0.058..19.514 rows=3600.00 loops=1)
+                    Hash Cond: (ph.hashtag_id = h.hashtag_id)
+                    Buffers: shared hit=665
+                    ->  Seq Scan on post_hashtags ph  (cost=0.00..2164.00 rows=150000 width=8) (actual time=0.015..9.160 rows=150000.00 loops=1)
+                          Buffers: shared hit=664
+                    ->  Hash  (cost=1.62..1.62 rows=1 width=4) (actual time=0.025..0.025 rows=1.00 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=1
+                          ->  Seq Scan on hashtags h  (cost=0.00..1.62 rows=1 width=4) (actual time=0.010..0.014 rows=1.00 loops=1)
+                                Filter: ((tag)::text = 'travel'::text)
+                                Rows Removed by Filter: 49
+                                Buffers: shared hit=1
+              ->  Index Scan using posts_pkey on posts p  (cost=0.29..0.34 rows=1 width=12) (actual time=0.002..0.002 rows=0.06 loops=3600)
+                    Index Cond: (post_id = ph.post_id)
+                    Filter: (created_at >= '2026-06-01 00:00:00+05:30'::timestamp with time zone)
+                    Rows Removed by Filter: 1
+                    Index Searches: 3600
+                    Buffers: shared hit=10800
+Planning:
+  Buffers: shared hit=211
+Planning Time: 1.783 ms
+Execution Time: 28.770 ms

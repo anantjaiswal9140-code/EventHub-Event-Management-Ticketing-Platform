@@ -1,0 +1,87 @@
+=== R15 run 1 ===
+Sort  (cost=7114.85..7123.64 rows=3515 width=32) (actual time=69.767..69.775 rows=136.00 loops=1)
+  Sort Key: u.user_id
+  Sort Method: quicksort  Memory: 32kB
+  Buffers: shared hit=2409
+  ->  HashAggregate  (cost=6863.67..6907.83 rows=3515 width=32) (actual time=69.534..69.724 rows=136.00 loops=1)
+        Group Key: u.username
+        Filter: (u.followers_count <> count(f.follower_id))
+        Batches: 1  Memory Usage: 345kB
+        Rows Removed by Filter: 3135
+        Buffers: shared hit=2406
+        ->  Hash Right Join  (cost=905.16..6715.99 rows=29537 width=28) (actual time=5.328..56.704 rows=75254.00 loops=1)
+              Hash Cond: (f.followee_id = u.user_id)
+              Buffers: shared hit=2406
+              ->  Seq Scan on follows f  (cost=0.00..5152.35 rows=250813 width=8) (actual time=0.023..25.366 rows=250729.00 loops=1)
+                    Filter: ((status)::text = 'ACCEPTED'::text)
+                    Rows Removed by Filter: 7859
+                    Buffers: shared hit=1920
+              ->  Hash  (cost=861.00..861.00 rows=3533 width=24) (actual time=5.283..5.284 rows=3271.00 loops=1)
+                    Buckets: 4096  Batches: 1  Memory Usage: 217kB
+                    Buffers: shared hit=486
+                    ->  Seq Scan on users u  (cost=0.00..861.00 rows=3533 width=24) (actual time=0.018..4.763 rows=3271.00 loops=1)
+                          Filter: (is_verified OR ((account_type)::text = 'CREATOR'::text))
+                          Rows Removed by Filter: 26729
+                          Buffers: shared hit=486
+Planning:
+  Buffers: shared hit=182
+Planning Time: 1.141 ms
+Execution Time: 69.908 ms
+=== R15 run 2 ===
+Sort  (cost=7114.85..7123.64 rows=3515 width=32) (actual time=58.893..58.900 rows=136.00 loops=1)
+  Sort Key: u.user_id
+  Sort Method: quicksort  Memory: 32kB
+  Buffers: shared hit=2409
+  ->  HashAggregate  (cost=6863.67..6907.83 rows=3515 width=32) (actual time=58.670..58.859 rows=136.00 loops=1)
+        Group Key: u.username
+        Filter: (u.followers_count <> count(f.follower_id))
+        Batches: 1  Memory Usage: 345kB
+        Rows Removed by Filter: 3135
+        Buffers: shared hit=2406
+        ->  Hash Right Join  (cost=905.16..6715.99 rows=29537 width=28) (actual time=3.679..47.815 rows=75254.00 loops=1)
+              Hash Cond: (f.followee_id = u.user_id)
+              Buffers: shared hit=2406
+              ->  Seq Scan on follows f  (cost=0.00..5152.35 rows=250813 width=8) (actual time=0.005..20.880 rows=250729.00 loops=1)
+                    Filter: ((status)::text = 'ACCEPTED'::text)
+                    Rows Removed by Filter: 7859
+                    Buffers: shared hit=1920
+              ->  Hash  (cost=861.00..861.00 rows=3533 width=24) (actual time=3.661..3.662 rows=3271.00 loops=1)
+                    Buckets: 4096  Batches: 1  Memory Usage: 217kB
+                    Buffers: shared hit=486
+                    ->  Seq Scan on users u  (cost=0.00..861.00 rows=3533 width=24) (actual time=0.011..3.337 rows=3271.00 loops=1)
+                          Filter: (is_verified OR ((account_type)::text = 'CREATOR'::text))
+                          Rows Removed by Filter: 26729
+                          Buffers: shared hit=486
+Planning:
+  Buffers: shared hit=182
+Planning Time: 0.697 ms
+Execution Time: 59.016 ms
+=== R15 run 3 ===
+Sort  (cost=7114.85..7123.64 rows=3515 width=32) (actual time=60.112..60.119 rows=136.00 loops=1)
+  Sort Key: u.user_id
+  Sort Method: quicksort  Memory: 32kB
+  Buffers: shared hit=2409
+  ->  HashAggregate  (cost=6863.67..6907.83 rows=3515 width=32) (actual time=59.879..60.075 rows=136.00 loops=1)
+        Group Key: u.username
+        Filter: (u.followers_count <> count(f.follower_id))
+        Batches: 1  Memory Usage: 345kB
+        Rows Removed by Filter: 3135
+        Buffers: shared hit=2406
+        ->  Hash Right Join  (cost=905.16..6715.99 rows=29537 width=28) (actual time=3.530..48.859 rows=75254.00 loops=1)
+              Hash Cond: (f.followee_id = u.user_id)
+              Buffers: shared hit=2406
+              ->  Seq Scan on follows f  (cost=0.00..5152.35 rows=250813 width=8) (actual time=0.008..21.491 rows=250729.00 loops=1)
+                    Filter: ((status)::text = 'ACCEPTED'::text)
+                    Rows Removed by Filter: 7859
+                    Buffers: shared hit=1920
+              ->  Hash  (cost=861.00..861.00 rows=3533 width=24) (actual time=3.510..3.510 rows=3271.00 loops=1)
+                    Buckets: 4096  Batches: 1  Memory Usage: 217kB
+                    Buffers: shared hit=486
+                    ->  Seq Scan on users u  (cost=0.00..861.00 rows=3533 width=24) (actual time=0.010..3.189 rows=3271.00 loops=1)
+                          Filter: (is_verified OR ((account_type)::text = 'CREATOR'::text))
+                          Rows Removed by Filter: 26729
+                          Buffers: shared hit=486
+Planning:
+  Buffers: shared hit=182
+Planning Time: 0.695 ms
+Execution Time: 60.244 ms

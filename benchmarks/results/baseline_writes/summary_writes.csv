@@ -1,0 +1,6 @@
+query_id,type,avg_ms,median_ms,min_ms,max_ms,scan_nodes
+W02,WRITE,3.434,2.604,2.453,5.245,(no scan)
+W03,WRITE,0.466,0.465,0.397,0.535,Index Scan using posts_pkey on posts
+W04,WRITE,137.134,120.724,117.641,173.036,Seq Scan on users | Seq Scan on follows
+W05,WRITE,24.065,24.416,18.141,29.639,Seq Scan on stories
+W06,WRITE,11.715,12.395,9.778,12.972,Index Scan using follows_pkey on follows

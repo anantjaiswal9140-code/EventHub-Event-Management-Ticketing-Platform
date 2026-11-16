@@ -1,0 +1,42 @@
+=== W06 run 1 ===
+Update on follows  (cost=0.42..4809.47 rows=0 width=0) (actual time=12.855..12.856 rows=0.00 loops=1)
+  Buffers: shared hit=919 dirtied=32
+  ->  Index Scan using follows_pkey on follows  (cost=0.42..4809.47 rows=1 width=64) (actual time=0.893..10.775 rows=15.00 loops=1)
+        Index Cond: (followee_id = 338)
+        Filter: ((status)::text = 'PENDING'::text)
+        Rows Removed by Filter: 40
+        Index Searches: 1
+        Buffers: shared hit=769
+Planning:
+  Buffers: shared hit=78
+Planning Time: 0.617 ms
+Execution Time: 12.972 ms
+
+=== W06 run 2 ===
+Update on follows  (cost=0.42..4809.47 rows=0 width=0) (actual time=9.661..9.662 rows=0.00 loops=1)
+  Buffers: shared hit=948 dirtied=1
+  ->  Index Scan using follows_pkey on follows  (cost=0.42..4809.47 rows=1 width=64) (actual time=0.992..8.954 rows=15.00 loops=1)
+        Index Cond: (followee_id = 338)
+        Filter: ((status)::text = 'PENDING'::text)
+        Rows Removed by Filter: 40
+        Index Searches: 1
+        Buffers: shared hit=799
+Planning:
+  Buffers: shared hit=78
+Planning Time: 0.508 ms
+Execution Time: 9.778 ms
+
+=== W06 run 3 ===
+Update on follows  (cost=0.42..4809.47 rows=0 width=0) (actual time=12.273..12.274 rows=0.00 loops=1)
+  Buffers: shared hit=948 dirtied=1
+  ->  Index Scan using follows_pkey on follows  (cost=0.42..4809.47 rows=1 width=64) (actual time=0.748..9.036 rows=15.00 loops=1)
+        Index Cond: (followee_id = 338)
+        Filter: ((status)::text = 'PENDING'::text)
+        Rows Removed by Filter: 40
+        Index Searches: 1
+        Buffers: shared hit=799
+Planning:
+  Buffers: shared hit=78
+Planning Time: 0.505 ms
+Execution Time: 12.395 ms
+

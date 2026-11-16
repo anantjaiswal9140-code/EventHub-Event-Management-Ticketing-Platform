@@ -1,0 +1,93 @@
+=== R17 run 1 ===
+Limit  (cost=2521.68..2521.68 rows=1 width=18) (actual time=29.126..29.135 rows=50.00 loops=1)
+  Buffers: shared hit=22170
+  ->  Sort  (cost=2521.68..2521.68 rows=1 width=18) (actual time=29.124..29.128 rows=50.00 loops=1)
+        Sort Key: p.like_count DESC
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22170
+        ->  Nested Loop  (cost=0.58..2521.67 rows=1 width=18) (actual time=8.069..29.002 rows=392.00 loops=1)
+              Buffers: shared hit=22167
+              ->  Nested Loop  (cost=0.29..2445.99 rows=10 width=12) (actual time=7.978..24.856 rows=1129.00 loops=1)
+                    Buffers: shared hit=18780
+                    ->  Seq Scan on posts p  (cost=0.00..1842.00 rows=91 width=12) (actual time=7.921..11.869 rows=5996.00 loops=1)
+                          Filter: (((post_type)::text = 'REEL'::text) AND (EXTRACT(year FROM created_at) = '2026'::numeric))
+                          Rows Removed by Filter: 54004
+                          Buffers: shared hit=792
+                    ->  Index Scan using users_pkey on users u  (cost=0.29..6.64 rows=1 width=4) (actual time=0.002..0.002 rows=0.19 loops=5996)
+                          Index Cond: (user_id = p.user_id)
+                          Filter: ((account_type)::text = 'CREATOR'::text)
+                          Rows Removed by Filter: 1
+                          Index Searches: 5996
+                          Buffers: shared hit=17988
+              ->  Index Scan using post_media_pkey on post_media pm  (cost=0.29..7.57 rows=1 width=10) (actual time=0.003..0.003 rows=0.35 loops=1129)
+                    Index Cond: ((post_id = p.post_id) AND ("position" = 1))
+                    Filter: (duration_sec > '60'::numeric)
+                    Rows Removed by Filter: 1
+                    Index Searches: 1129
+                    Buffers: shared hit=3387
+Planning:
+  Buffers: shared hit=230
+Planning Time: 2.400 ms
+Execution Time: 29.196 ms
+=== R17 run 2 ===
+Limit  (cost=2521.68..2521.68 rows=1 width=18) (actual time=27.973..27.980 rows=50.00 loops=1)
+  Buffers: shared hit=22170
+  ->  Sort  (cost=2521.68..2521.68 rows=1 width=18) (actual time=27.971..27.974 rows=50.00 loops=1)
+        Sort Key: p.like_count DESC
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22170
+        ->  Nested Loop  (cost=0.58..2521.67 rows=1 width=18) (actual time=7.982..27.847 rows=392.00 loops=1)
+              Buffers: shared hit=22167
+              ->  Nested Loop  (cost=0.29..2445.99 rows=10 width=12) (actual time=7.900..24.327 rows=1129.00 loops=1)
+                    Buffers: shared hit=18780
+                    ->  Seq Scan on posts p  (cost=0.00..1842.00 rows=91 width=12) (actual time=7.844..11.782 rows=5996.00 loops=1)
+                          Filter: (((post_type)::text = 'REEL'::text) AND (EXTRACT(year FROM created_at) = '2026'::numeric))
+                          Rows Removed by Filter: 54004
+                          Buffers: shared hit=792
+                    ->  Index Scan using users_pkey on users u  (cost=0.29..6.64 rows=1 width=4) (actual time=0.002..0.002 rows=0.19 loops=5996)
+                          Index Cond: (user_id = p.user_id)
+                          Filter: ((account_type)::text = 'CREATOR'::text)
+                          Rows Removed by Filter: 1
+                          Index Searches: 5996
+                          Buffers: shared hit=17988
+              ->  Index Scan using post_media_pkey on post_media pm  (cost=0.29..7.57 rows=1 width=10) (actual time=0.003..0.003 rows=0.35 loops=1129)
+                    Index Cond: ((post_id = p.post_id) AND ("position" = 1))
+                    Filter: (duration_sec > '60'::numeric)
+                    Rows Removed by Filter: 1
+                    Index Searches: 1129
+                    Buffers: shared hit=3387
+Planning:
+  Buffers: shared hit=230
+Planning Time: 1.557 ms
+Execution Time: 28.047 ms
+=== R17 run 3 ===
+Limit  (cost=2521.68..2521.68 rows=1 width=18) (actual time=30.136..30.143 rows=50.00 loops=1)
+  Buffers: shared hit=22170
+  ->  Sort  (cost=2521.68..2521.68 rows=1 width=18) (actual time=30.134..30.137 rows=50.00 loops=1)
+        Sort Key: p.like_count DESC
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22170
+        ->  Nested Loop  (cost=0.58..2521.67 rows=1 width=18) (actual time=9.317..30.026 rows=392.00 loops=1)
+              Buffers: shared hit=22167
+              ->  Nested Loop  (cost=0.29..2445.99 rows=10 width=12) (actual time=9.236..26.200 rows=1129.00 loops=1)
+                    Buffers: shared hit=18780
+                    ->  Seq Scan on posts p  (cost=0.00..1842.00 rows=91 width=12) (actual time=9.183..13.015 rows=5996.00 loops=1)
+                          Filter: (((post_type)::text = 'REEL'::text) AND (EXTRACT(year FROM created_at) = '2026'::numeric))
+                          Rows Removed by Filter: 54004
+                          Buffers: shared hit=792
+                    ->  Index Scan using users_pkey on users u  (cost=0.29..6.64 rows=1 width=4) (actual time=0.002..0.002 rows=0.19 loops=5996)
+                          Index Cond: (user_id = p.user_id)
+                          Filter: ((account_type)::text = 'CREATOR'::text)
+                          Rows Removed by Filter: 1
+                          Index Searches: 5996
+                          Buffers: shared hit=17988
+              ->  Index Scan using post_media_pkey on post_media pm  (cost=0.29..7.57 rows=1 width=10) (actual time=0.003..0.003 rows=0.35 loops=1129)
+                    Index Cond: ((post_id = p.post_id) AND ("position" = 1))
+                    Filter: (duration_sec > '60'::numeric)
+                    Rows Removed by Filter: 1
+                    Index Searches: 1129
+                    Buffers: shared hit=3387
+Planning:
+  Buffers: shared hit=230
+Planning Time: 1.558 ms
+Execution Time: 30.211 ms
